@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -36,6 +37,10 @@ type Project struct {
 
 func main() {
 	godotenv.Load()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
 
 	dbUrl := os.Getenv("DB_URL")
 	if dbUrl == "" {
@@ -52,7 +57,7 @@ func main() {
 	apiConfig := ApiConfig{
 		db: dbQueries,
 	}
-
+	fmt.Printf("started server on port: %v\n", port)
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -60,9 +65,11 @@ func main() {
 
 	r.Post("/users", apiConfig.handleCreateUser)
 	r.Get("/users", apiConfig.handleGetAllUsers)
+	r.Get("/users/{id}", apiConfig.handleGetUserById)
 	r.Post("/projects", apiConfig.handleCreateProject)
 	r.Get("/projects", apiConfig.handleGetAllProjects)
-	http.ListenAndServe(":3000", r)
+	r.Get("/projects/{id}", apiConfig.handleGetProjectById)
+	http.ListenAndServe(":"+port, r)
 }
 
 func handleHello(w http.ResponseWriter, r *http.Request) {

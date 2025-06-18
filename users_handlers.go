@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 func (apiConfig *ApiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -63,4 +66,27 @@ func (apiConfig *ApiConfig) handleGetAllUsers(w http.ResponseWriter, r *http.Req
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func (apiConfig *ApiConfig) handleGetUserById(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	userId, err := uuid.Parse(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	user, err := apiConfig.db.GetUserById(r.Context(), userId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		log.Printf("error encoding json: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(userJson)
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Pranay-Tej/go-sql-practice/internal/database"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -71,4 +72,27 @@ func (apiConfig *ApiConfig) handleGetAllProjects(w http.ResponseWriter, r *http.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func (apiConfig *ApiConfig) handleGetProjectById(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	projectId, err := uuid.Parse(id)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	project, err := apiConfig.db.GetProjectById(r.Context(), projectId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	projectJson, err := json.Marshal(project)
+	if err != nil {
+		log.Printf("error encoding json: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(projectJson)
 }

@@ -1,4 +1,4 @@
-module github.com/Pranay-Tej/go-sql-practice
+module go-sql-practice
 
 go 1.24.2
 

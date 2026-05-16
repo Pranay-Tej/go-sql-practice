@@ -6,34 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/Pranay-Tej/go-sql-practice/internal/database"
+	"go-sql-practice/config"
+	"go-sql-practice/internal/database"
+	"go-sql-practice/projects"
+	"go-sql-practice/users"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
-
-type ApiConfig struct {
-	db *database.Queries
-}
-
-type User struct {
-	Id        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Username  string    `json:"username"`
-}
-
-type Project struct {
-	Id        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Name      string    `json:"name"`
-	UserId    uuid.UUID `json:"user_id"`
-}
 
 func main() {
 	godotenv.Load()
@@ -51,11 +34,15 @@ func main() {
 	if err != nil {
 		log.Fatal("error connecting to db")
 	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal("error connecting to db")
+	}
 
 	dbQueries := database.New(db)
 
-	apiConfig := ApiConfig{
-		db: dbQueries,
+	apiConfig := config.ApiConfig{
+		Db: dbQueries,
 	}
 	fmt.Printf("started server on port: %v\n", port)
 	r := chi.NewRouter()
@@ -63,13 +50,16 @@ func main() {
 
 	r.Get("/", handleHello)
 
-	r.Post("/users", apiConfig.handleCreateUser)
-	r.Get("/users", apiConfig.handleGetAllUsers)
-	r.Get("/users/{id}", apiConfig.handleGetUserById)
-	r.Post("/projects", apiConfig.handleCreateProject)
-	r.Get("/projects", apiConfig.handleGetAllProjects)
-	r.Get("/projects/{id}", apiConfig.handleGetProjectById)
-	http.ListenAndServe(":"+port, r)
+	r.Post("/users", users.HandleCreateUser(&apiConfig))
+	r.Get("/users", users.HandleGetAllUsers(&apiConfig))
+	r.Get("/users/{id}", users.HandleGetUserById(&apiConfig))
+	r.Post("/projects", projects.HandleCreateProject(&apiConfig))
+	r.Get("/projects", projects.HandleGetAllProjects(&apiConfig))
+	r.Get("/projects/{id}", projects.HandleGetProjectById(&apiConfig))
+	err = http.ListenAndServe(":"+port, r)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func handleHello(w http.ResponseWriter, r *http.Request) {
